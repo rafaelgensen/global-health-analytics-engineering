@@ -15,11 +15,11 @@ provider "google" {
 }
 
 module "cloud_function" {
-  source  = "./modules/cloud_function"
-  region  = "us-central1"
-  bucket  = var.function_bucket
-  object  = "function.zip"
-  project_id = var.project_id
+  source      = "./modules/cloud_function"
+  region      = "us-central1"
+  bucket      = var.function_bucket
+  object      = "function.zip"
+  project_id  = var.project_id
 }
 
 module "scheduler" {
