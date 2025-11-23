@@ -7,11 +7,12 @@ API_URL = "https://ghoapi.azureedge.net/api/Indicator"
 TABLE = "who_raw"
 CHUNK = 500
 
+BRONZE_DATASET = "global_health_analytics_engineering_23112025_bronze"
+
 @functions_framework.http
 def main(request):
     project_id = os.getenv("PROJECT_ID")
-    dataset_id = f"{project_id}_bronze"
-    table_id = f"{project_id}.{dataset_id}.{TABLE}"
+    table_id = f"{project_id}.{BRONZE_DATASET}.{TABLE}"
 
     resp = requests.get(API_URL)
     resp.raise_for_status()
