@@ -41,6 +41,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           export_default_credentials: true
+          install_components: gsutil
 
       - name: Create buckets if missing
         run: |
