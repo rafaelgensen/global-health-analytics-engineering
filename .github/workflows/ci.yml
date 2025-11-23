@@ -55,9 +55,9 @@ jobs:
 
       - name: Zip Cloud Function
         run: |
-          cd infra/terraform/modules/cloud_function/src
+          cd src/cloud_function
           zip -r function.zip .
-          mv function.zip ../../../../function.zip
+          mv function.zip ../../function.zip
 
       - name: Upload ZIP to GCS
         run: |
