@@ -1,7 +1,7 @@
 # WHO Analytics Engineering Project
 
 ## Architecture
-![Architecture](assets/architecture.png)
+![Architecture](assets/architecture2.png)
 
 ## Summary
 This project implements an end-to-end analytics engineering pipeline using data from the World Health Organization (WHO) Global Health Observatory OData API.  
