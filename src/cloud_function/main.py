@@ -24,7 +24,7 @@ def main(request):
     bq = bigquery.Client(project=project_id)
 
     for i in range(0, len(data), CHUNK):
-        batch = data[i:i+CHUNK]
+        batch = [{"raw": row} for row in data[i:i+CHUNK]]
         errors = bq.insert_rows_json(table_id, batch)
         if errors:
             return (str(errors), 500)
