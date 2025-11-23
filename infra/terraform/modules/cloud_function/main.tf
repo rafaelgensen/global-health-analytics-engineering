@@ -27,7 +27,7 @@ resource "google_cloud_run_service_iam_member" "invoker" {
   location = var.region
   project  = var.project_id
 
-  service  = google_cloudfunctions2_function.fn.service_config[0].service
+  service  = google_cloudfunctions2_function.fn.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 
