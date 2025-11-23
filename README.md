@@ -29,3 +29,4 @@ The goal is to ingest raw health indicators, clean and standardize them using db
 - **Silver:** cleaned and standardized tables, ensuring consistent types and normalized columns.  
 - **Gold:** final analytical layer with dimensional/star-schema models for BI consumption.  
 - Star schema placed only in the gold layer for clarity, performance, and reusability.
+   

@@ -27,7 +27,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # --- AUTENTICAÇÃO CORRETA ---
       - id: auth
         uses: google-github-actions/auth@v2
         with:
@@ -38,12 +37,11 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           install_components: 'gsutil'
 
-      # Vars para terraform
       - run: |
           echo "TF_VAR_project_id=${{ secrets.GCP_PROJECT_ID }}" >> $GITHUB_ENV
           echo "TF_VAR_function_bucket=${{ env.FUNCTION_BUCKET }}" >> $GITHUB_ENV
+          echo "TF_VAR_region=us-central1" >> $GITHUB_ENV
 
-      # --- CRIAÇÃO DOS BUCKETS ---
       - name: Create buckets if missing
         run: |
           create_bucket_if_missing() {
@@ -56,7 +54,6 @@ jobs:
           create_bucket_if_missing "${{ env.TF_STATE_BUCKET }}"
           create_bucket_if_missing "${{ env.FUNCTION_BUCKET }}"
 
-      # --- ZIP DA CLOUD FUNCTION ---
       - name: Zip Cloud Function
         run: |
           cd src/cloud_function
@@ -65,9 +62,10 @@ jobs:
 
       - name: Upload ZIP to GCS
         run: |
-          gsutil cp function.zip "gs://${{ env.FUNCTION_BUCKET }}/function.zip"
+          RAND=$(date +%s)
+          gsutil cp function.zip "gs://${{ env.FUNCTION_BUCKET }}/function_${RAND}.zip"
+          echo "TF_VAR_function_object=function_${RAND}.zip" >> $GITHUB_ENV
 
-      # Terraform
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6
