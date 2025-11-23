@@ -16,8 +16,21 @@ resource "google_cloudfunctions2_function" "fn" {
 
   service_config {
     max_instance_count = 1
+
     environment_variables = {
       PROJECT_ID = var.project_id
+    }
   }
-  }
+}
+
+resource "google_cloud_run_service_iam_member" "invoker" {
+  location = var.region
+  project  = var.project_id
+  service  = google_cloudfunctions2_function.fn.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+
+  depends_on = [
+    google_cloudfunctions2_function.fn
+  ]
 }
