@@ -1,0 +1,97 @@
+name: Terraform - GCP Provisioning
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+
+  workflow_dispatch:
+    inputs:
+      destroy:
+        description: "Destroy resources?"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+env:
+  TF_STATE_BUCKET: ${{ secrets.GCP_PROJECT_ID }}-tfstate
+  FUNCTION_BUCKET: ${{ secrets.GCP_PROJECT_ID }}-function
+  TF_STATE_KEY: terraform/terraform.tfstate
+
+jobs:
+  terraform:
+    name: Apply or Destroy Infra
+    runs-on: ubuntu-latest
+
+    if: startsWith(github.head_ref || github.ref_name, 'prod/') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Create buckets if missing
+        run: |
+          create_bucket_if_missing() {
+            local BUCKET=$1
+            if ! gsutil ls -b "gs://$BUCKET" >/dev/null 2>&1; then
+              gsutil mb -l us-central1 "gs://$BUCKET"
+            fi
+          }
+
+          create_bucket_if_missing "${{ env.TF_STATE_BUCKET }}"
+          create_bucket_if_missing "${{ env.FUNCTION_BUCKET }}"
+
+      - name: Zip Cloud Function
+        run: |
+          cd infra/terraform/modules/cloud_function/src
+          zip -r function.zip .
+          mv function.zip ../../../../function.zip
+
+      - name: Upload ZIP to GCS
+        run: |
+          gsutil cp function.zip "gs://${{ env.FUNCTION_BUCKET }}/function.zip"
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Create backend config
+        run: |
+          cat > infra/terraform/backend.tf <<EOF
+          terraform {
+            backend "gcs" {
+              bucket = "${{ env.TF_STATE_BUCKET }}"
+              prefix = "${{ env.TF_STATE_KEY }}"
+            }
+          }
+          EOF
+
+      - name: Terraform Init
+        run: terraform -chdir=infra/terraform init
+
+      - name: Terraform Validate
+        run: terraform -chdir=infra/terraform validate
+
+      - name: Terraform Plan
+        run: terraform -chdir=infra/terraform plan -out=tfplan.out
+
+      - name: Apply or Destroy
+        run: |
+          if [ "${{ github.event.inputs.destroy }}" == "true" ]; then
+            terraform -chdir=infra/terraform destroy -auto-approve
+          else
+            terraform -chdir=infra/terraform apply -auto-approve tfplan.out
+          fi

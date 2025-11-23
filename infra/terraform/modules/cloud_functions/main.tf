@@ -16,5 +16,8 @@ resource "google_cloudfunctions2_function" "fn" {
 
   service_config {
     max_instance_count = 1
+    environment_variables = {
+      PROJECT_ID = var.project_id
+  }
   }
 }
