@@ -2,11 +2,8 @@ name: Terraform - GCP Provisioning
 
 on:
   pull_request:
-    branches:
-      - main
-    types:
-      - opened
-      - synchronize
+    branches: [main]
+    types: [opened, synchronize]
 
   workflow_dispatch:
     inputs:
@@ -15,9 +12,7 @@ on:
         required: true
         default: "false"
         type: choice
-        options:
-          - "false"
-          - "true"
+        options: ["false", "true"]
 
 env:
   TF_STATE_BUCKET: ${{ secrets.GCP_PROJECT_ID }}-tfstate
@@ -26,23 +21,29 @@ env:
 
 jobs:
   terraform:
-    name: Apply or Destroy Infra
     runs-on: ubuntu-latest
-
     if: startsWith(github.head_ref || github.ref_name, 'prod/') || github.event_name == 'workflow_dispatch'
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
+      # --- AUTENTICAÇÃO CORRETA ---
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
-          install_components: gsutil
+          install_components: 'gsutil'
 
+      # Vars para terraform
+      - run: |
+          echo "TF_VAR_project_id=${{ secrets.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "TF_VAR_function_bucket=${{ env.FUNCTION_BUCKET }}" >> $GITHUB_ENV
+
+      # --- CRIAÇÃO DOS BUCKETS ---
       - name: Create buckets if missing
         run: |
           create_bucket_if_missing() {
@@ -55,18 +56,19 @@ jobs:
           create_bucket_if_missing "${{ env.TF_STATE_BUCKET }}"
           create_bucket_if_missing "${{ env.FUNCTION_BUCKET }}"
 
+      # --- ZIP DA CLOUD FUNCTION ---
       - name: Zip Cloud Function
         run: |
-          cd infra/terraform/modules/cloud_function/src
+          cd src/cloud_function
           zip -r function.zip .
-          mv function.zip ../../../../function.zip
+          mv function.zip ../../function.zip
 
       - name: Upload ZIP to GCS
         run: |
           gsutil cp function.zip "gs://${{ env.FUNCTION_BUCKET }}/function.zip"
 
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v3
+      # Terraform
+      - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6
 
