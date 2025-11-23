@@ -40,6 +40,7 @@ jobs:
       - run: |
           echo "TF_VAR_project_id=${{ secrets.GCP_PROJECT_ID }}" >> $GITHUB_ENV
           echo "TF_VAR_function_bucket=${{ env.FUNCTION_BUCKET }}" >> $GITHUB_ENV
+          echo "TF_VAR_region=us-central1" >> $GITHUB_ENV
 
       - name: Create buckets if missing
         run: |
