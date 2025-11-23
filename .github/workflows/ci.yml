@@ -63,7 +63,7 @@ jobs:
       - name: Upload ZIP to GCS
         run: |
           RAND=$(date +%s)
-          gsutil cp -n function.zip "gs://${{ env.FUNCTION_BUCKET }}/function_${RAND}.zip"
+          gsutil cp function.zip "gs://${{ env.FUNCTION_BUCKET }}/function_${RAND}.zip"
           echo "TF_VAR_function_object=function_${RAND}.zip" >> $GITHUB_ENV
 
       - uses: hashicorp/setup-terraform@v3
